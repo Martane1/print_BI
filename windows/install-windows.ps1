@@ -9,10 +9,60 @@ function Get-NpmCommand {
   if (-not $cmd) {
     $cmd = Get-Command npm -ErrorAction SilentlyContinue
   }
-  if (-not $cmd) {
-    throw "npm nao encontrado. Instale Node.js (LTS) e tente novamente."
-  }
+  if (-not $cmd) { return $null }
   return $cmd.Source
+}
+
+function Ensure-NodeAndNpm {
+  $npm = Get-NpmCommand
+  if ($npm) { return $npm }
+
+  Write-Host "Node.js/NPM nao encontrado."
+  Write-Host "Tentando instalar automaticamente via winget..."
+
+  $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+  if (-not $winget) {
+    throw "winget nao encontrado. Instale Node.js LTS manualmente em https://nodejs.org e rode novamente."
+  }
+
+  & $winget.Source install --id OpenJS.NodeJS.LTS --source winget --accept-package-agreements --accept-source-agreements --silent --scope user
+  if ($LASTEXITCODE -ne 0) {
+    throw "Falha ao instalar Node.js via winget. Codigo: $LASTEXITCODE"
+  }
+
+  $extraNodePaths = @(
+    "$env:LocalAppData\Programs\nodejs",
+    "$env:ProgramFiles\nodejs"
+  )
+  foreach ($p in $extraNodePaths) {
+    if ((Test-Path $p) -and ($env:Path -notlike "*$p*")) {
+      $env:Path = "$p;$env:Path"
+    }
+  }
+
+  $npm = Get-NpmCommand
+  if (-not $npm) {
+    throw "Node.js foi instalado, mas npm ainda nao foi encontrado nesta sessao. Feche e abra o instalador novamente."
+  }
+
+  return $npm
+}
+
+function Ensure-PlaywrightChromium {
+  param([string]$ProjectDir, [string]$NpmCmd)
+
+  $playwrightCli = Join-Path $ProjectDir "node_modules\.bin\playwright.cmd"
+  if (Test-Path $playwrightCli) {
+    Write-Host "Instalando Chromium do Playwright..."
+    & $playwrightCli install chromium
+  } else {
+    Write-Host "Playwright CLI nao encontrado em node_modules/.bin. Tentando via npm exec..."
+    & $NpmCmd exec -- playwright install chromium
+  }
+
+  if ($LASTEXITCODE -ne 0) {
+    throw "Falha ao instalar Chromium do Playwright. Codigo: $LASTEXITCODE"
+  }
 }
 
 function Create-Shortcut {
@@ -37,8 +87,8 @@ $projectDir = Split-Path -Parent $scriptDir
 Set-Location $projectDir
 
 Write-Host "Projeto: $projectDir"
-Write-Host "Validando npm..."
-$npm = Get-NpmCommand
+Write-Host "Validando Node.js/NPM..."
+$npm = Ensure-NodeAndNpm
 
 if (-not (Test-Path (Join-Path $projectDir "config.json")) -and (Test-Path (Join-Path $projectDir "config.example.json"))) {
   Copy-Item (Join-Path $projectDir "config.example.json") (Join-Path $projectDir "config.json")
@@ -49,15 +99,14 @@ Write-Host "Instalando dependencias Node..."
 & $npm install
 
 if (-not $SkipBrowserInstall) {
-  $playwrightCli = Join-Path $projectDir "node_modules\.bin\playwright.cmd"
-  if (Test-Path $playwrightCli) {
-    Write-Host "Instalando Chromium do Playwright..."
-    & $playwrightCli install chromium
-  } else {
-    Write-Host "Playwright CLI nao encontrado em node_modules/.bin. Tentando via npm exec..."
-    & $npm exec -- playwright install chromium
-  }
+  Ensure-PlaywrightChromium -ProjectDir $projectDir -NpmCmd $npm
 }
+
+$setupDir = Join-Path $projectDir ".setup"
+if (-not (Test-Path $setupDir)) {
+  New-Item -ItemType Directory -Path $setupDir | Out-Null
+}
+Set-Content -Path (Join-Path $setupDir "windows-ready.txt") -Value (Get-Date -Format o)
 
 $desktop = [Environment]::GetFolderPath("Desktop")
 $runner = Join-Path $projectDir "windows\run-print-bi.ps1"

@@ -6,7 +6,8 @@
   "scripts": {
     "capture": "node scripts/capture-clicksense.js",
     "install:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File windows/install-windows.ps1",
-    "launcher:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File windows/run-print-bi.ps1 -Action Menu"
+    "launcher:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File windows/run-print-bi.ps1 -Action Menu",
+    "run:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File windows/install-windows.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File windows/run-print-bi.ps1 -Action Menu"
   },
   "dependencies": {
     "pdf-lib": "^1.17.1",

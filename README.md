@@ -12,6 +12,7 @@ Automacao para:
 - `config.example.json`: modelo de configuracao
 - `ABRIR_PRINT_BI.command`: launcher macOS
 - `INSTALAR_WINDOWS.bat`: instalador por clique no Windows
+- `EXECUTAR_WINDOWS.bat`: instala e ja abre o launcher no Windows
 - `windows/install-windows.ps1`: instala dependencias e cria atalhos
 - `windows/run-print-bi.ps1`: launcher/execucao no Windows
 
@@ -54,9 +55,11 @@ Acoes do launcher:
 ## Uso no Windows (instalador)
 
 1. Depois de clonar o projeto, execute por duplo clique:
-- `INSTALAR_WINDOWS.bat`
+- `EXECUTAR_WINDOWS.bat` (recomendado)
+- ou `INSTALAR_WINDOWS.bat` (apenas instala)
 
 2. O instalador faz:
+- instala Node.js LTS automaticamente via `winget` (se necessario)
 - valida `npm`
 - roda `npm install`
 - instala `chromium` do Playwright
@@ -67,6 +70,7 @@ Acoes do launcher:
   - `PRINT BI - Ultima Saida`
 
 3. Use o atalho `PRINT BI - Launcher` para operar por botao.
+4. No primeiro uso, rode `Login` para salvar sessao; depois `Captura completa`.
 
 ## Execucao manual (qualquer SO)
 
@@ -113,7 +117,7 @@ git push -u origin main
 
 ## Troubleshooting rapido
 
-- `npm nao encontrado`: instale Node.js LTS e reabra o terminal/sessao.
+- `npm nao encontrado`: rode `INSTALAR_WINDOWS.bat`; ele tenta instalar Node.js automaticamente via `winget`.
 - erro de login no BI: rode `Login` novamente e confirme ENTER no terminal.
 - sem OMs encontradas: confira `qlik.omField`.
 - renderizacao incompleta: aumente `capture.waitAfterNavigationMs`.
