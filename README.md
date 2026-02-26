@@ -123,6 +123,7 @@ git push -u origin main
 
 - `npm nao encontrado`: rode `INSTALAR_WINDOWS.bat`; ele tenta `winget` e depois fallback portatil em `.tools/node`.
 - sem acesso a `nodejs.org`: baixe `node-v20.x.x-win-x64.zip`, renomeie para `node-win-x64.zip`, coloque em `windows/assets/` e rode novamente.
+- se o proxy pedir autenticacao no PowerShell: o instalador tenta usar credenciais do usuario Windows; se falhar, use o zip offline em `windows/assets/node-win-x64.zip`.
 - erro de login no BI: rode `Login` novamente e confirme ENTER no terminal.
 - sem OMs encontradas: confira `qlik.omField`.
 - renderizacao incompleta: aumente `capture.waitAfterNavigationMs`.

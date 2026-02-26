@@ -82,7 +82,24 @@ function Install-NodePortable {
     $shaUrl = "$baseUrl" + "SHASUMS256.txt"
 
     Write-Host "Baixando metadados do Node.js..."
-    $shaContent = (Invoke-WebRequest -Uri $shaUrl -UseBasicParsing).Content
+    try {
+      $shaResponse = Invoke-WebRequest -Uri $shaUrl -UseBasicParsing
+      $shaContent = $shaResponse.Content
+    } catch {
+      try {
+        $proxyObj = [System.Net.WebRequest]::GetSystemWebProxy()
+        $proxyUri = $proxyObj.GetProxy([Uri]$shaUrl)
+        if ($proxyUri -and $proxyUri.AbsoluteUri -ne $shaUrl) {
+          Write-Host "Tentando metadados via proxy do sistema: $($proxyUri.AbsoluteUri)"
+          $shaResponse = Invoke-WebRequest -Uri $shaUrl -UseBasicParsing -Proxy $proxyUri.AbsoluteUri -ProxyUseDefaultCredentials
+          $shaContent = $shaResponse.Content
+        } else {
+          throw
+        }
+      } catch {
+        throw "Falha ao baixar metadados do Node.js (proxy/autenticacao). Coloque um pacote offline em windows/assets/node-win-x64.zip."
+      }
+    }
 
     $zipName = $null
     foreach ($line in ($shaContent -split "`n")) {
@@ -101,7 +118,22 @@ function Install-NodePortable {
     $zipPath = Join-Path $env:TEMP $zipName
 
     Write-Host "Baixando Node.js portatil: $zipName"
-    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+    try {
+      Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+    } catch {
+      try {
+        $proxyObj = [System.Net.WebRequest]::GetSystemWebProxy()
+        $proxyUri = $proxyObj.GetProxy([Uri]$zipUrl)
+        if ($proxyUri -and $proxyUri.AbsoluteUri -ne $zipUrl) {
+          Write-Host "Tentando download via proxy do sistema: $($proxyUri.AbsoluteUri)"
+          Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -Proxy $proxyUri.AbsoluteUri -ProxyUseDefaultCredentials
+        } else {
+          throw
+        }
+      } catch {
+        throw "Falha ao baixar Node.js portatil (proxy/autenticacao). Coloque o arquivo em windows/assets/node-win-x64.zip."
+      }
+    }
   }
 
   if (Test-Path $nodeRoot) {
