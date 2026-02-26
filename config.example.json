@@ -29,7 +29,12 @@
     "fullPage": true,
     "waitAfterNavigationMs": 4500,
     "waitAfterSelectionMs": 4500,
-    "navigationTimeoutMs": 120000
+    "navigationTimeoutMs": 120000,
+    "targetSelector": "#qv-stage-container",
+    "hideSelectors": [
+      "#qs-toolbar-container",
+      "[data-testid='qs-sub-toolbar']"
+    ]
   },
   "qlik": {
     "omField": "OM",

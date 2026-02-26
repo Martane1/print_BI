@@ -77,7 +77,9 @@ function loadConfig(configPath) {
       fullPage: true,
       waitAfterNavigationMs: 4500,
       waitAfterSelectionMs: 4500,
-      navigationTimeoutMs: 120000
+      navigationTimeoutMs: 120000,
+      targetSelector: "#qv-stage-container",
+      hideSelectors: ["#qs-toolbar-container", "[data-testid='qs-sub-toolbar']"]
     },
     qlik: {
       omField: "OM",
@@ -156,6 +158,46 @@ function buildContextAuthOptions(config) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeSelectorList(selectors) {
+  if (!Array.isArray(selectors)) return [];
+  return selectors.map((value) => String(value || "").trim()).filter(Boolean);
+}
+
+async function applyCaptureStyles(page, captureConfig) {
+  const hideSelectors = normalizeSelectorList(captureConfig.hideSelectors);
+  if (!hideSelectors.length) return;
+
+  const css = `${hideSelectors.join(", ")} { display: none !important; visibility: hidden !important; }`;
+  await page.addStyleTag({ content: css }).catch(() => {});
+}
+
+async function takeCaptureScreenshot(page, filePath, captureConfig) {
+  await applyCaptureStyles(page, captureConfig);
+
+  const selector = String(captureConfig.targetSelector || "").trim();
+  if (selector) {
+    const element = await page.$(selector);
+    if (element) {
+      await element.scrollIntoViewIfNeeded().catch(() => {});
+      const box = await element.boundingBox().catch(() => null);
+      if (box && box.width > 0 && box.height > 0) {
+        await element.screenshot({ path: filePath });
+        await element.dispose();
+        return;
+      }
+      await element.dispose();
+      console.warn(`Selector sem area visivel: ${selector}. Usando screenshot da pagina.`);
+    } else {
+      console.warn(`Selector de captura nao encontrado: ${selector}. Usando screenshot da pagina.`);
+    }
+  }
+
+  await page.screenshot({
+    path: filePath,
+    fullPage: Boolean(captureConfig.fullPage)
+  });
 }
 
 function sanitize(input, fallback = "item") {
@@ -540,10 +582,7 @@ async function runCapture(config) {
       await page.goto(sheet.url, { waitUntil: "domcontentloaded" });
       await ensureQlikReady(page, appId, config.capture.navigationTimeoutMs);
       await sleep(config.capture.waitAfterNavigationMs);
-      await page.screenshot({
-        path: filePath,
-        fullPage: Boolean(config.capture.fullPage)
-      });
+      await takeCaptureScreenshot(page, filePath, config.capture);
 
       omImages.push(filePath);
       allImages.push(filePath);

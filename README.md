@@ -31,6 +31,8 @@ cp config.example.json config.json
 - `appId`
 - `sheetUrlTemplate`
 - `qlik.omField`
+- `capture.targetSelector` (padrao: `#qv-stage-container`)
+- `capture.hideSelectors` para esconder barras do Qlik no print
 
 3. Para rede Intraer, ajuste proxy se necessario:
 - `browser.proxy.server` (ex.: `http://proxybrasilia.intraer:8080`)
@@ -124,3 +126,4 @@ git push -u origin main
 - erro de login no BI: rode `Login` novamente e confirme ENTER no terminal.
 - sem OMs encontradas: confira `qlik.omField`.
 - renderizacao incompleta: aumente `capture.waitAfterNavigationMs`.
+- print com barras/menu do Qlik: ajuste `capture.targetSelector` e `capture.hideSelectors`.
