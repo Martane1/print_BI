@@ -1,0 +1,42 @@
+{
+  "baseUrl": "https://acesso.sigaer.intraer:5432/mashup/sense/app/85e81e92-7767-4397-896a-3c78068598b8/sheet/da9a77ff-5e59-4bca-9a58-fbe160140940/state/analysis",
+  "appId": "85e81e92-7767-4397-896a-3c78068598b8",
+  "sheetUrlTemplate": "https://acesso.sigaer.intraer:5432/mashup/sense/app/85e81e92-7767-4397-896a-3c78068598b8/sheet/{sheetId}/state/analysis",
+  "outputDir": "output",
+  "login": {
+    "storageStatePath": "auth/storage-state.json",
+    "headless": false
+  },
+  "browser": {
+    "channel": "",
+    "headlessCapture": true,
+    "proxy": {
+      "server": "",
+      "bypass": "*.intraer,10.0.0.0/8,172.16.0.0/8,192.168.0.0/8,hod.serpro.gov.br,acesso.serpro.gov.br",
+      "username": "",
+      "password": ""
+    }
+  },
+  "auth": {
+    "httpUsername": "",
+    "httpPassword": ""
+  },
+  "capture": {
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "fullPage": true,
+    "waitAfterNavigationMs": 4500,
+    "waitAfterSelectionMs": 4500,
+    "navigationTimeoutMs": 120000
+  },
+  "qlik": {
+    "omField": "OM",
+    "omValues": [],
+    "sheetIds": [],
+    "sheetTitleRegex": "",
+    "maxFieldRows": 20000,
+    "fieldPageSize": 5000
+  }
+}

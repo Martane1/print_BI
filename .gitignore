@@ -1,0 +1,7 @@
+node_modules/
+output/
+auth/storage-state.json
+npm-debug.log*
+.DS_Store
+config.json
+PRINT_BI.app/

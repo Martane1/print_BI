@@ -1,0 +1,15 @@
+{
+  "name": "print-bi-clicksense",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Automacao de captura de telas do Qlik Sense e geracao de PDF.",
+  "scripts": {
+    "capture": "node scripts/capture-clicksense.js",
+    "install:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File windows/install-windows.ps1",
+    "launcher:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File windows/run-print-bi.ps1 -Action Menu"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "playwright": "^1.52.0"
+  }
+}
