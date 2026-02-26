@@ -23,6 +23,8 @@ Automacao para:
 cp config.example.json config.json
 ```
 
+`config.json` nao sobe para o GitHub (esta no `.gitignore`), para evitar enviar credenciais/config local.
+
 2. Ajuste os campos principais:
 - `baseUrl`
 - `appId`
