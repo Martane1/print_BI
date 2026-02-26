@@ -6,3 +6,4 @@ npm-debug.log*
 config.json
 PRINT_BI.app/
 .setup/
+.tools/

@@ -6,12 +6,19 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Get-NpmCommand {
+  param([string]$ProjectDir)
+
+  $localNpm = Join-Path $ProjectDir ".tools\node\npm.cmd"
+  if (Test-Path $localNpm) {
+    return $localNpm
+  }
+
   $cmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
   if (-not $cmd) {
     $cmd = Get-Command npm -ErrorAction SilentlyContinue
   }
   if (-not $cmd) {
-    throw "npm nao encontrado. Instale Node.js (LTS) e execute o instalador novamente."
+    throw "npm nao encontrado. Execute INSTALAR_WINDOWS.bat novamente."
   }
   return $cmd.Source
 }
@@ -109,7 +116,7 @@ if ($Action -eq "OpenLast") {
   exit 0
 }
 
-$npm = Get-NpmCommand
+$npm = Get-NpmCommand -ProjectDir $projectDir
 Ensure-Dependencies -ProjectDir $projectDir -NpmCmd $npm
 
 if ($Action -eq "Login") {
