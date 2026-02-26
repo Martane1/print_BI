@@ -64,6 +64,7 @@ Acoes do launcher:
 - instala Node.js LTS automaticamente via `winget` (se necessario)
 - se `winget` nao existir, baixa Node.js portatil para `.tools/node` (sem admin)
 - se internet for bloqueada, voce pode colocar um ZIP manual em `windows/assets/node-win-x64.zip`
+- se `nodejs.org` estiver bloqueado, o instalador tenta automaticamente pegar o pacote via GitHub
 - valida `npm`
 - roda `npm install`
 - instala `chromium` do Playwright

@@ -55,6 +55,58 @@ function Install-NodeViaWinget {
   return $true
 }
 
+function Invoke-WebRequestSmart {
+  param(
+    [Parameter(Mandatory = $true)][string]$Uri,
+    [string]$OutFile
+  )
+
+  $params = @{
+    Uri = $Uri
+    UseBasicParsing = $true
+    Headers = @{ "User-Agent" = "print-bi-installer" }
+  }
+  if ($OutFile) {
+    $params.OutFile = $OutFile
+  }
+
+  try {
+    return Invoke-WebRequest @params
+  } catch {
+    $proxyObj = [System.Net.WebRequest]::GetSystemWebProxy()
+    $proxyUri = $proxyObj.GetProxy([Uri]$Uri)
+    if (-not $proxyUri -or $proxyUri.AbsoluteUri -eq $Uri) {
+      throw
+    }
+
+    $params.Proxy = $proxyUri.AbsoluteUri
+    $params.ProxyUseDefaultCredentials = $true
+    return Invoke-WebRequest @params
+  }
+}
+
+function Resolve-NodeZipFromGithub {
+  $apiUrl = "https://api.github.com/repos/nodejs/node/releases?per_page=50"
+  $response = Invoke-WebRequestSmart -Uri $apiUrl
+  $releases = $response.Content | ConvertFrom-Json
+
+  foreach ($release in $releases) {
+    if (-not $release.tag_name) { continue }
+    if ($release.tag_name -notmatch "^v20\.") { continue }
+
+    foreach ($asset in $release.assets) {
+      if ($asset.name -match "^node-v20\.[0-9]+\.[0-9]+-win-x64\.zip$") {
+        return [PSCustomObject]@{
+          Name = $asset.name
+          Url = $asset.browser_download_url
+        }
+      }
+    }
+  }
+
+  return $null
+}
+
 function Install-NodePortable {
   param([string]$ProjectDir)
 
@@ -78,61 +130,55 @@ function Install-NodePortable {
     Write-Host "Usando pacote Node.js offline: windows/assets/node-win-x64.zip"
     $zipPath = $offlineZip
   } else {
-    $baseUrl = "https://nodejs.org/dist/latest-v20.x/"
-    $shaUrl = "$baseUrl" + "SHASUMS256.txt"
+    $zipName = $null
+    $zipUrl = $null
 
-    Write-Host "Baixando metadados do Node.js..."
     try {
-      $shaResponse = Invoke-WebRequest -Uri $shaUrl -UseBasicParsing
+      $baseUrl = "https://nodejs.org/dist/latest-v20.x/"
+      $shaUrl = "$baseUrl" + "SHASUMS256.txt"
+      Write-Host "Baixando metadados do Node.js..."
+      $shaResponse = Invoke-WebRequestSmart -Uri $shaUrl
       $shaContent = $shaResponse.Content
+
+      foreach ($line in ($shaContent -split "`n")) {
+        if ($line -match "node-v20\.[0-9]+\.[0-9]+-win-x64\.zip") {
+          $parts = ($line -split "\s+") | Where-Object { $_ -and $_.Trim() -ne "" }
+          $zipName = $parts[-1].Trim()
+          break
+        }
+      }
+
+      if ($zipName) {
+        $zipUrl = "$baseUrl$zipName"
+      }
     } catch {
+      Write-Host "Falha ao obter metadados do nodejs.org. Tentando GitHub..."
+    }
+
+    if (-not $zipUrl) {
       try {
-        $proxyObj = [System.Net.WebRequest]::GetSystemWebProxy()
-        $proxyUri = $proxyObj.GetProxy([Uri]$shaUrl)
-        if ($proxyUri -and $proxyUri.AbsoluteUri -ne $shaUrl) {
-          Write-Host "Tentando metadados via proxy do sistema: $($proxyUri.AbsoluteUri)"
-          $shaResponse = Invoke-WebRequest -Uri $shaUrl -UseBasicParsing -Proxy $proxyUri.AbsoluteUri -ProxyUseDefaultCredentials
-          $shaContent = $shaResponse.Content
-        } else {
-          throw
+        $githubNode = Resolve-NodeZipFromGithub
+        if ($githubNode) {
+          $zipName = $githubNode.Name
+          $zipUrl = $githubNode.Url
+          Write-Host "Pacote identificado via GitHub: $zipName"
         }
       } catch {
-        throw "Falha ao baixar metadados do Node.js (proxy/autenticacao). Coloque um pacote offline em windows/assets/node-win-x64.zip."
+        Write-Host "Falha ao consultar GitHub para pacote do Node.js."
       }
     }
 
-    $zipName = $null
-    foreach ($line in ($shaContent -split "`n")) {
-      if ($line -match "node-v20\.[0-9]+\.[0-9]+-win-x64\.zip") {
-        $parts = ($line -split "\s+") | Where-Object { $_ -and $_.Trim() -ne "" }
-        $zipName = $parts[-1].Trim()
-        break
-      }
+    if (-not $zipUrl) {
+      throw "Falha ao baixar metadados do Node.js (proxy/autenticacao). Coloque um pacote offline em windows/assets/node-win-x64.zip."
     }
 
-    if (-not $zipName) {
-      throw "Nao foi possivel identificar o pacote win-x64 do Node.js."
-    }
-
-    $zipUrl = "$baseUrl$zipName"
     $zipPath = Join-Path $env:TEMP $zipName
 
     Write-Host "Baixando Node.js portatil: $zipName"
     try {
-      Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+      Invoke-WebRequestSmart -Uri $zipUrl -OutFile $zipPath | Out-Null
     } catch {
-      try {
-        $proxyObj = [System.Net.WebRequest]::GetSystemWebProxy()
-        $proxyUri = $proxyObj.GetProxy([Uri]$zipUrl)
-        if ($proxyUri -and $proxyUri.AbsoluteUri -ne $zipUrl) {
-          Write-Host "Tentando download via proxy do sistema: $($proxyUri.AbsoluteUri)"
-          Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -Proxy $proxyUri.AbsoluteUri -ProxyUseDefaultCredentials
-        } else {
-          throw
-        }
-      } catch {
-        throw "Falha ao baixar Node.js portatil (proxy/autenticacao). Coloque o arquivo em windows/assets/node-win-x64.zip."
-      }
+      throw "Falha ao baixar Node.js portatil (proxy/autenticacao). Coloque o arquivo em windows/assets/node-win-x64.zip."
     }
   }
 
